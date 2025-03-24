@@ -1,1 +1,1 @@
-# doctrine-random-bundle
+# Doctrine随机增强
