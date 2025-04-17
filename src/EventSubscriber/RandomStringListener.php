@@ -70,7 +70,7 @@ class RandomStringListener implements EntityCheckerInterface
                 }
 
                 if ($attribute->length > 0) {
-                    $idValue = mb_substr($idValue, 0, $attribute->length);
+                    $idValue = substr($idValue, 0, $attribute->length);
                 }
 
                 $this->logger->debug("为{$property->getName()}分配随机字符串", [
