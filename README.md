@@ -1,30 +1,35 @@
 # Doctrine Random Bundle
 
-[English](#english) | [中文](#中文)
+[![Latest Version](https://img.shields.io/packagist/v/tourze/doctrine-random-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/doctrine-random-bundle)
+[![Total Downloads](https://img.shields.io/packagist/dt/tourze/doctrine-random-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/doctrine-random-bundle)
 
-## English
+[English](README.md) | [中文](README.zh-CN.md)
 
-A Symfony bundle that provides random data generation capabilities for Doctrine entities.
+A Symfony bundle that provides random string generation capabilities for Doctrine entities.
 
-### Features
+## Features
 
 - Generate random string values for entity properties
 - Configurable prefix and length for random strings
-- Automatic value generation on entity creation/update
+- Automatic value generation on entity creation
+- Skip generation if property already has a value
 
-### Requirements
+## Requirements
 
 - PHP 8.1 or higher
 - Symfony 6.4 or higher
 - Doctrine Bundle 2.13 or higher
+- Doctrine ORM 2.20/3.0 or higher
 
-### Installation
+## Installation
 
 ```bash
 composer require tourze/doctrine-random-bundle
 ```
 
-### Usage
+The bundle uses Symfony's auto-configuration, so it will be automatically enabled once installed.
+
+## Usage
 
 Add the `RandomStringColumn` attribute to your entity properties:
 
@@ -35,55 +40,46 @@ class YourEntity
 {
     #[RandomStringColumn(prefix: 'user_', length: 20)]
     private string $randomId;
+
+    // Getters and setters
+    public function getRandomId(): string
+    {
+        return $this->randomId;
+    }
+
+    public function setRandomId(string $randomId): self
+    {
+        $this->randomId = $randomId;
+        return $this;
+    }
 }
 ```
 
-### Configuration
+## How It Works
+
+The bundle registers a Doctrine event listener that automatically generates random string values for properties marked with the `RandomStringColumn` attribute during the `prePersist` event. The random string is only generated if the property value is empty.
+
+## Configuration
 
 The `RandomStringColumn` attribute accepts the following parameters:
 
 - `prefix`: String prefix for the random value (default: '')
 - `length`: Length of the random string (default: 16)
 
-## 中文
-
-一个为 Doctrine 实体提供随机数据生成功能的 Symfony Bundle。
-
-### 功能特性
-
-- 为实体属性生成随机字符串值
-- 可配置随机字符串的前缀和长度
-- 在实体创建/更新时自动生成值
-
-### 系统要求
-
-- PHP 8.1 或更高版本
-- Symfony 6.4 或更高版本
-- Doctrine Bundle 2.13 或更高版本
-
-### 安装
-
-```bash
-composer require tourze/doctrine-random-bundle
-```
-
-### 使用方法
-
-在实体属性上添加 `RandomStringColumn` 属性：
+## Example
 
 ```php
-use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
+// Create a new entity
+$entity = new YourEntity();
 
-class YourEntity
-{
-    #[RandomStringColumn(prefix: 'user_', length: 20)]
-    private string $randomId;
-}
+// The randomId property will be automatically filled with a random string
+// when the entity is persisted
+$entityManager->persist($entity);
+$entityManager->flush();
+
+// Now $entity->getRandomId() will return something like 'user_a1b2c3d4e5f6g7h8i9'
 ```
 
-### 配置说明
+## License
 
-`RandomStringColumn` 属性接受以下参数：
-
-- `prefix`: 随机值的前缀字符串（默认：''）
-- `length`: 随机字符串的长度（默认：16）
+This bundle is available under the MIT license. See the LICENSE file for more information.
