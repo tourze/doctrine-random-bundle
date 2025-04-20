@@ -5,14 +5,17 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-一个为 Doctrine 实体提供随机字符串生成功能的 Symfony Bundle。
+一个通过 PHP Attribute 为 Doctrine 实体属性自动生成随机字符串的 Symfony Bundle。
+
+---
 
 ## 功能特性
 
-- 为实体属性生成随机字符串值
-- 可配置随机字符串的前缀和长度
-- 在实体创建时自动生成值
-- 如果属性已有值则跳过生成
+- 为实体属性自动生成随机字符串
+- 支持自定义前缀和长度
+- 在实体创建（Doctrine prePersist 事件）时自动生成
+- 若属性已有值则不会覆盖
+- 与 Symfony 自动配置无缝集成
 
 ## 系统要求
 
@@ -27,11 +30,13 @@
 composer require tourze/doctrine-random-bundle
 ```
 
-该 Bundle 使用 Symfony 的自动配置功能，安装后会自动启用。
+本 Bundle 由 Symfony Flex 自动注册，无需额外配置。
 
-## 使用方法
+---
 
-在实体属性上添加 `RandomStringColumn` 属性：
+## 快速开始
+
+在实体属性上添加 `RandomStringColumn` Attribute：
 
 ```php
 use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
@@ -41,7 +46,6 @@ class YourEntity
     #[RandomStringColumn(prefix: 'user_', length: 20)]
     private string $randomId;
 
-    // Getter 和 Setter 方法
     public function getRandomId(): string
     {
         return $this->randomId;
@@ -55,9 +59,60 @@ class YourEntity
 }
 ```
 
-## 工作原理
+当你持久化新实体时，`randomId` 属性会在为空时自动填充：
 
-该 Bundle 注册了一个 Doctrine 事件监听器，在 `prePersist` 事件期间自动为标记有 `RandomStringColumn` 属性的属性生成随机字符串值。只有当属性值为空时才会生成随机字符串。
+```php
+$entity = new YourEntity();
+$entityManager->persist($entity);
+$entityManager->flush();
+// $entity->getRandomId() 会得到类似 'user_a1b2c3d4e5f6g7h8i9' 的值
+```
+
+---
+
+## 配置说明
+
+`RandomStringColumn` 属性支持以下参数：
+
+- `prefix`：随机值的前缀字符串（默认：''）
+- `length`：随机字符串长度（默认：16）
+
+---
+
+## 详细说明
+
+- Bundle 内部通过 Doctrine 事件监听器（`RandomStringListener`）在 `prePersist` 阶段为标记有 `RandomStringColumn` 的属性生成随机字符串。
+- 若属性已有值则不会自动生成。
+- 随机字符串由数字和大小写字母组成。
+
+---
+
+## 贡献指南
+
+欢迎贡献！参与方式：
+
+- 提交 Issue 报告 Bug 或建议新功能
+- 提交 Pull Request，需附详细说明和相关测试
+- 遵循 PSR 代码规范
+- 提交前请用 PHPUnit 完成测试
+
+---
+
+## 许可证
+
+本 Bundle 基于 MIT 协议开源，详见 [LICENSE](LICENSE) 文件。
+
+---
+
+## 更新日志
+
+- v0.1.0：初始版本，支持随机字符串属性和事件监听。
+
+---
+
+## 作者
+
+由 [tourze](https://github.com/tourze) 维护。
 
 ## 配置说明
 
