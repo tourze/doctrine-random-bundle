@@ -6,3 +6,6 @@ services:
 
   Tourze\DoctrineRandomBundle\EventSubscriber\:
     resource: '../../EventSubscriber/'
+  
+  Tourze\DoctrineRandomBundle\Service\:
+    resource: '../../Service/'
