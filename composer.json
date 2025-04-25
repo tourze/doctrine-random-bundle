@@ -16,7 +16,7 @@
     "symfony/yaml": "^6.4 || ^7.1",
     "symfony/cache-contracts": "^3",
     "tourze/bundle-dependency": "0.0.*",
-    "tourze/doctrine-entity-checker-bundle": "0.0.*",
+    "tourze/doctrine-entity-checker-bundle": "~0.0.8",
     "psr/log": "^3|^2|^1"
   },
   "require-dev": {
