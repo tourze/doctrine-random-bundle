@@ -6,6 +6,9 @@ services:
 
   Tourze\DoctrineRandomBundle\EventSubscriber\:
     resource: '../../EventSubscriber/'
-  
   Tourze\DoctrineRandomBundle\Service\:
     resource: '../../Service/'
+
+  doctrine-random.property-accessor:
+    class: Symfony\Component\PropertyAccess\PropertyAccessor
+    factory: [ 'Symfony\Component\PropertyAccess\PropertyAccess', 'createPropertyAccessor' ]

@@ -8,6 +8,7 @@ use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\ObjectManager;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Tourze\DoctrineEntityCheckerBundle\Checker\EntityCheckerInterface;
 use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
@@ -19,7 +20,7 @@ use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
 class RandomStringListener implements EntityCheckerInterface
 {
     public function __construct(
-        private readonly PropertyAccessor $propertyAccessor,
+        #[Autowire(service: 'doctrine-random.property-accessor')] private readonly PropertyAccessor $propertyAccessor,
         private readonly LoggerInterface $logger,
     ) {
     }
