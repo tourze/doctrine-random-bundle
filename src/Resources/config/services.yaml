@@ -12,3 +12,10 @@ services:
   doctrine-random.property-accessor:
     class: Symfony\Component\PropertyAccess\PropertyAccessor
     factory: [ 'Symfony\Component\PropertyAccess\PropertyAccess', 'createPropertyAccessor' ]
+    public: true
+
+  # Test environment public services
+  Tourze\DoctrineRandomBundle\EventSubscriber\RandomStringListener:
+    public: true
+  Tourze\DoctrineRandomBundle\Service\RandomService:
+    public: true
