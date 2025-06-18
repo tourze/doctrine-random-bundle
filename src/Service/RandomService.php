@@ -79,7 +79,7 @@ class RandomService
                 $qb->resetDQLPart('having');
                 $qb->resetDQLPart('orderBy');
                 $row = $qb->getQuery()->getOneOrNullResult();
-                if ($row) {
+                if ($row !== null) {
                     yield $row;
                     --$limit;
                 }

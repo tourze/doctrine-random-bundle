@@ -17,7 +17,7 @@ class DoctrineRandomBundleTest extends TestCase
     public function testBundleDependencies(): void
     {
         $dependencies = DoctrineRandomBundle::getBundleDependencies();
-        $this->assertIsArray($dependencies);
+        self::assertIsArray($dependencies);
         $this->assertArrayHasKey(DoctrineEntityCheckerBundle::class, $dependencies);
         $this->assertEquals(['all' => true], $dependencies[DoctrineEntityCheckerBundle::class]);
     }

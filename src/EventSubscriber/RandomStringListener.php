@@ -66,7 +66,7 @@ class RandomStringListener implements EntityCheckerInterface
                 }
 
                 $idValue = $this->generateRandomString($attribute->length);
-                if ($attribute->prefix) {
+                if ($attribute->prefix !== null && $attribute->prefix !== '') {
                     $idValue = "{$attribute->prefix}{$idValue}";
                 }
 

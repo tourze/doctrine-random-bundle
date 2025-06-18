@@ -44,7 +44,6 @@ class RandomStringListenerTest extends TestCase
         $method->setAccessible(true);
 
         $result = $method->invoke($this->listener, 10);
-        $this->assertIsString($result);
         $this->assertSame(10, strlen($result));
 
         // 测试不同长度
