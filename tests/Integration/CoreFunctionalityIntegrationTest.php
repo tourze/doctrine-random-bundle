@@ -15,7 +15,6 @@ use Tourze\IntegrationTestKernel\IntegrationTestKernel;
 class CoreFunctionalityIntegrationTest extends KernelTestCase
 {
     private EntityManagerInterface $entityManager;
-    private RandomStringListener $listener;
     private RandomService $randomService;
 
     protected static function createKernel(array $options = []): KernelInterface
@@ -288,7 +287,6 @@ class CoreFunctionalityIntegrationTest extends KernelTestCase
     {
         self::bootKernel();
         $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $this->listener = static::getContainer()->get(RandomStringListener::class);
         $this->randomService = static::getContainer()->get(RandomService::class);
 
         $this->cleanDatabase();

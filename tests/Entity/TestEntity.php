@@ -7,30 +7,30 @@ use Doctrine\ORM\Mapping as ORM;
 use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'test_entity')]
+#[ORM\Table(name: 'test_entity', options: ['comment' => '随机字符串测试实体'])]
 class TestEntity implements \Stringable
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['comment' => '主键ID'])]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '带前缀的随机ID'])]
     #[RandomStringColumn(prefix: 'test_', length: 20)]
     private string $randomId = '';
 
-    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '简单随机字符串'])]
     #[RandomStringColumn(length: 16)]
     private string $simpleRandom = '';
 
-    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '短编码随机字符串'])]
     #[RandomStringColumn(prefix: 'short_', length: 10)]
     private string $shortCode = '';
 
-    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[ORM\Column(type: Types::STRING, length: 255, options: ['comment' => '实体名称'])]
     private string $name = '';
 
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(type: Types::INTEGER, options: ['comment' => '数值'])]
     private int $value = 0;
 
     public function getId(): ?int
@@ -95,6 +95,6 @@ class TestEntity implements \Stringable
 
     public function __toString(): string
     {
-        return $this->name ?: 'TestEntity #' . $this->id;
+        return $this->name !== '' ? $this->name : 'TestEntity #' . $this->id;
     }
 }

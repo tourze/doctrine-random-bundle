@@ -81,8 +81,8 @@ class RandomServiceTest extends TestCase
      */
     public function testGetRandomResultBasicFunctionality(): void
     {
-        // 测试一个简单的情况，只用测试服务类是否被正确构造
-        $this->assertTrue(method_exists($this->randomService, 'getRandomResult'), '应该有 getRandomResult 方法');
+        // 测试服务类是否被正确构造，PHPStan 已确定方法存在
+        $this->assertInstanceOf(RandomService::class, $this->randomService, '服务应该是 RandomService 的实例');
     }
 
     /**
