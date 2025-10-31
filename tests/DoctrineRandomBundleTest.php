@@ -1,24 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\Tests;
 
-use PHPUnit\Framework\TestCase;
-use Tourze\DoctrineEntityCheckerBundle\DoctrineEntityCheckerBundle;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Tourze\DoctrineRandomBundle\DoctrineRandomBundle;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractBundleTestCase;
 
 /**
- * 测试 DoctrineRandomBundle 核心功能
+ * @internal
  */
-class DoctrineRandomBundleTest extends TestCase
+#[CoversClass(DoctrineRandomBundle::class)]
+#[RunTestsInSeparateProcesses]
+final class DoctrineRandomBundleTest extends AbstractBundleTestCase
 {
-    /**
-     * 测试 Bundle 依赖关系
-     */
-    public function testBundleDependencies(): void
-    {
-        $dependencies = DoctrineRandomBundle::getBundleDependencies();
-        // PHPStan 已确定 $dependencies 是数组类型，无需再次断言
-        $this->assertArrayHasKey(DoctrineEntityCheckerBundle::class, $dependencies);
-        $this->assertEquals(['all' => true], $dependencies[DoctrineEntityCheckerBundle::class]);
-    }
 }

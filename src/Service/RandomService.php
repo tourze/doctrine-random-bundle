@@ -1,28 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\Service;
 
 use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\QueryBuilder;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
-class RandomService
+#[Autoconfigure(public: true)]
+#[WithMonologChannel(channel: 'doctrine_random')]
+readonly class RandomService
 {
     public function __construct(
-        private readonly LockFactory $lockFactory,
-        private readonly LoggerInterface $logger,
-        private readonly CacheInterface $cache,
-    )
-    {
+        private LockFactory $lockFactory,
+        private LoggerInterface $logger,
+        private CacheInterface $cache,
+    ) {
     }
 
     /**
      * 传入一个QueryBuilder，我们返回一个随机结果
+     * @param mixed $rangeSize
+     * @return \Generator<object>
      */
-    public function getRandomResult(QueryBuilder $queryBuilder, int $limit = 1, $rangeSize = 1000): \Traversable
+    public function getRandomResult(QueryBuilder $queryBuilder, int $limit = 1, $rangeSize = 1000): \Generator
     {
         // 假设主键叫 id
         $pkName = 'id';
@@ -50,6 +57,12 @@ class RandomService
 
             return $qb->getQuery()->getResult(AbstractQuery::HYDRATE_SCALAR_COLUMN);
         });
+
+        // 确保 $allIds 是数组
+        if (!is_array($allIds)) {
+            $allIds = [];
+        }
+
         shuffle($allIds);
 
         foreach ($allIds as $pickId) {
@@ -79,7 +92,7 @@ class RandomService
                 $qb->resetDQLPart('having');
                 $qb->resetDQLPart('orderBy');
                 $row = $qb->getQuery()->getOneOrNullResult();
-                if ($row !== null) {
+                if (null !== $row) {
                     yield $row;
                     --$limit;
                 }

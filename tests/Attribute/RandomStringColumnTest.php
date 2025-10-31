@@ -1,14 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\Tests\Attribute;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
 
 /**
  * 测试 RandomStringColumn 属性
+ *
+ * @internal
  */
-class RandomStringColumnTest extends TestCase
+#[CoversClass(RandomStringColumn::class)]
+final class RandomStringColumnTest extends TestCase
 {
     /**
      * 测试默认构造函数

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\Attribute;
 
 /**
  * 生成随机字符串
  */
-#[\Attribute(\Attribute::TARGET_PROPERTY)]
+#[\Attribute(flags: \Attribute::TARGET_PROPERTY)]
 class RandomStringColumn
 {
     public function __construct(

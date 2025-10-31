@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\EventSubscriber;
 
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
@@ -7,7 +9,9 @@ use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\ObjectManager;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Tourze\DoctrineEntityCheckerBundle\Checker\EntityCheckerInterface;
@@ -17,11 +21,13 @@ use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
  * 在保存实体时，自动分配随机值
  */
 #[AsDoctrineListener(event: Events::prePersist)]
-class RandomStringListener implements EntityCheckerInterface
+#[Autoconfigure(public: true)]
+#[WithMonologChannel(channel: 'doctrine_random')]
+readonly class RandomStringListener implements EntityCheckerInterface
 {
     public function __construct(
-        #[Autowire(service: 'doctrine-random.property-accessor')] private readonly PropertyAccessor $propertyAccessor,
-        private readonly LoggerInterface $logger,
+        #[Autowire(service: 'doctrine-random.property-accessor')] private PropertyAccessor $propertyAccessor,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -46,41 +52,60 @@ class RandomStringListener implements EntityCheckerInterface
     {
         $reflection = $objectManager->getClassMetadata($entity::class)->getReflectionClass();
         foreach ($reflection->getProperties(\ReflectionProperty::IS_PRIVATE) as $property) {
-            // 如果字段不可以写入，直接跳过即可
-            if (!$this->propertyAccessor->isWritable($entity, $property->getName())) {
+            $this->processPropertyRandomString($entity, $property);
+        }
+    }
+
+    private function processPropertyRandomString(object $entity, \ReflectionProperty $property): void
+    {
+        if (!$this->propertyAccessor->isWritable($entity, $property->getName())) {
+            return;
+        }
+
+        foreach ($property->getAttributes(RandomStringColumn::class) as $attribute) {
+            $attributeInstance = $attribute->newInstance();
+            if ($this->shouldSkipProperty($entity, $property)) {
                 continue;
             }
 
-            foreach ($property->getAttributes(RandomStringColumn::class) as $attribute) {
-                $attribute = $attribute->newInstance();
-                /* @var RandomStringColumn $attribute */
-
-                try {
-                    // 已经有值了，我们就跳过
-                    $v = $property->getValue($entity);
-                    if (!empty($v)) {
-                        continue;
-                    }
-                } catch (\Throwable $exception) {
-                    // 忽略
-                }
-
-                $idValue = $this->generateRandomString($attribute->length);
-                if ($attribute->prefix !== null && $attribute->prefix !== '') {
-                    $idValue = "{$attribute->prefix}{$idValue}";
-                }
-
-                if ($attribute->length > 0) {
-                    $idValue = substr($idValue, 0, $attribute->length);
-                }
-
-                $this->logger->debug("为{$property->getName()}分配随机字符串", [
-                    'id' => $idValue,
-                    'entity' => $entity,
-                ]);
-                $this->propertyAccessor->setValue($entity, $property->getName(), $idValue);
-            }
+            $randomValue = $this->buildRandomValue($attributeInstance);
+            $this->setRandomValue($entity, $property, $randomValue);
         }
+    }
+
+    private function shouldSkipProperty(object $entity, \ReflectionProperty $property): bool
+    {
+        try {
+            $value = $property->getValue($entity);
+
+            return null !== $value && '' !== $value;
+        } catch (\Throwable $exception) {
+            return false;
+        }
+    }
+
+    private function buildRandomValue(RandomStringColumn $attribute): string
+    {
+        $randomValue = $this->generateRandomString($attribute->length);
+
+        if ('' !== $attribute->prefix) {
+            $randomValue = "{$attribute->prefix}{$randomValue}";
+        }
+
+        if ($attribute->length > 0) {
+            $randomValue = substr($randomValue, 0, $attribute->length);
+        }
+
+        return $randomValue;
+    }
+
+    private function setRandomValue(object $entity, \ReflectionProperty $property, string $value): void
+    {
+        $this->logger->debug("为{$property->getName()}分配随机字符串", [
+            'id' => $value,
+            'entity' => $entity,
+        ]);
+        $this->propertyAccessor->setValue($entity, $property->getName(), $value);
     }
 
     public function preUpdateEntity(ObjectManager $objectManager, object $entity, PreUpdateEventArgs $eventArgs): void

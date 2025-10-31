@@ -1,32 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\Tests\DependencyInjection;
 
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Tourze\DoctrineRandomBundle\DependencyInjection\DoctrineRandomExtension;
-use Tourze\DoctrineRandomBundle\EventSubscriber\RandomStringListener;
+use Tourze\PHPUnitSymfonyUnitTest\AbstractDependencyInjectionExtensionTestCase;
 
 /**
  * 测试依赖注入扩展
+ *
+ * @internal
  */
-class DoctrineRandomExtensionTest extends TestCase
+#[CoversClass(DoctrineRandomExtension::class)]
+final class DoctrineRandomExtensionTest extends AbstractDependencyInjectionExtensionTestCase
 {
-    /**
-     * 测试服务加载
-     */
-    public function testServiceLoading(): void
-    {
-        $container = new ContainerBuilder();
-        $extension = new DoctrineRandomExtension();
-
-        $extension->load([], $container);
-
-        // 测试事件订阅器服务是否被正确注册
-        $this->assertTrue($container->has(RandomStringListener::class));
-
-        // 测试随机服务是否被正确注册
-        $this->assertTrue($container->hasDefinition('Tourze\DoctrineRandomBundle\Service\RandomService') ||
-            $container->hasAlias('Tourze\DoctrineRandomBundle\Service\RandomService'));
-    }
 }

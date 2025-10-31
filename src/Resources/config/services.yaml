@@ -14,8 +14,11 @@ services:
     factory: [ 'Symfony\Component\PropertyAccess\PropertyAccess', 'createPropertyAccessor' ]
     public: true
 
-  # Test environment public services
-  Tourze\DoctrineRandomBundle\EventSubscriber\RandomStringListener:
-    public: true
-  Tourze\DoctrineRandomBundle\Service\RandomService:
-    public: true
+  # 配置 Lock Store 和 LockFactory 服务
+  lock.store:
+    class: Symfony\Component\Lock\Store\InMemoryStore
+
+  Symfony\Component\Lock\LockFactory:
+    arguments:
+      - '@lock.store'
+

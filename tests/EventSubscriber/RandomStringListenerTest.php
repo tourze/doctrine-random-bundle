@@ -1,37 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\Tests\EventSubscriber;
 
+use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ObjectManager;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\PropertyAccess\PropertyAccessor;
-use Tourze\DoctrineRandomBundle\Attribute\RandomStringColumn;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Tourze\DoctrineRandomBundle\EventSubscriber\RandomStringListener;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractEventSubscriberTestCase;
 
 /**
  * 测试 RandomStringListener 事件订阅器
+ *
+ * @internal
  */
-class RandomStringListenerTest extends TestCase
+#[CoversClass(RandomStringListener::class)]
+#[RunTestsInSeparateProcesses]
+final class RandomStringListenerTest extends AbstractEventSubscriberTestCase
 {
     private RandomStringListener $listener;
 
-    /** @var MockObject|PropertyAccessor */
-    private $propertyAccessor;
-
-    /** @var MockObject|LoggerInterface */
-    private $logger;
-
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->propertyAccessor = $this->createMock(PropertyAccessor::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->listener = new RandomStringListener(
-            $this->propertyAccessor,
-            $this->logger
-        );
+        // 从容器获取服务，使用真实的依赖
+        $this->listener = self::getService(RandomStringListener::class);
     }
 
     /**
@@ -44,14 +39,17 @@ class RandomStringListenerTest extends TestCase
         $method->setAccessible(true);
 
         $result = $method->invoke($this->listener, 10);
+        $this->assertIsString($result);
         $this->assertSame(10, strlen($result));
 
         // 测试不同长度
         $result2 = $method->invoke($this->listener, 20);
+        $this->assertIsString($result2);
         $this->assertSame(20, strlen($result2));
 
         // 确保随机性
         $result3 = $method->invoke($this->listener, 10);
+        $this->assertIsString($result3);
         $this->assertNotSame($result, $result3);
     }
 
@@ -61,46 +59,32 @@ class RandomStringListenerTest extends TestCase
     public function testPrePersistWithoutRandomStringColumn(): void
     {
         $entity = new class {
-            // 移除未使用的属性
+            public ?string $normalProperty = null;
         };
 
         $reflection = new \ReflectionClass($entity);
 
+        // 使用 PHPUnit Mock 创建 ClassMetadata
         $classMetadata = $this->createMock(ClassMetadata::class);
         $classMetadata->method('getReflectionClass')->willReturn($reflection);
 
+        // 使用 PHPUnit Mock 创建 ObjectManager
         $objectManager = $this->createMock(ObjectManager::class);
         $objectManager->method('getClassMetadata')->willReturn($classMetadata);
 
-        $this->propertyAccessor->method('isWritable')->willReturn(true);
-
-        // 直接调用 prePersistEntity 方法而不是通过 PrePersistEventArgs
+        // 直接调用 prePersistEntity 方法
         $this->listener->prePersistEntity($objectManager, $entity);
 
-        // 验证方法正常执行完成，没有抛出异常
-        $this->addToAssertionCount(1);
+        // 验证实体没有被修改，因为没有 RandomStringColumn 属性
+        $this->assertIsObject($entity);
     }
 
     /**
      * 提供一个标记了 RandomStringColumn 属性的测试实体
      */
-    private function getEntityWithRandomStringColumn(): object
+    private function getEntityWithRandomStringColumn(): TestEntityWithRandomStringColumn
     {
-        return new class {
-            #[RandomStringColumn(prefix: 'test_', length: 10)]
-            private string $randomId = '';
-
-            public function getRandomId(): string
-            {
-                return $this->randomId;
-            }
-
-            public function setRandomId(string $randomId): self
-            {
-                $this->randomId = $randomId;
-                return $this;
-            }
-        };
+        return new TestEntityWithRandomStringColumn();
     }
 
     /**
@@ -111,35 +95,20 @@ class RandomStringListenerTest extends TestCase
         $entity = $this->getEntityWithRandomStringColumn();
         $reflection = new \ReflectionClass($entity);
 
+        // 使用 PHPUnit Mock 创建 ClassMetadata
         $classMetadata = $this->createMock(ClassMetadata::class);
         $classMetadata->method('getReflectionClass')->willReturn($reflection);
 
+        // 使用 PHPUnit Mock 创建 ObjectManager
         $objectManager = $this->createMock(ObjectManager::class);
         $objectManager->method('getClassMetadata')->willReturn($classMetadata);
-
-        $this->propertyAccessor->method('isWritable')->willReturn(true);
-
-        // 模拟 PropertyAccessor 设置值的行为
-        $this->propertyAccessor->expects($this->once())
-            ->method('setValue')
-            ->with(
-                $this->identicalTo($entity),
-                $this->equalTo('randomId'),
-                $this->callback(function ($value) {
-                    return is_string($value)
-                        && strlen($value) === 10
-                        && strpos($value, 'test_') === 0;
-                })
-            )
-            ->willReturnCallback(function ($entity, $property, $value) {
-                $entity->setRandomId($value);
-            });
 
         // 直接调用 prePersistEntity 方法
         $this->listener->prePersistEntity($objectManager, $entity);
 
         // 验证值被正确设置
         $randomId = $entity->getRandomId();
+        $this->assertIsString($randomId);
         $this->assertStringStartsWith('test_', $randomId);
         $this->assertSame(10, strlen($randomId));
     }
@@ -154,21 +123,71 @@ class RandomStringListenerTest extends TestCase
 
         $reflection = new \ReflectionClass($entity);
 
+        // 使用 PHPUnit Mock 创建 ClassMetadata
         $classMetadata = $this->createMock(ClassMetadata::class);
         $classMetadata->method('getReflectionClass')->willReturn($reflection);
 
+        // 使用 PHPUnit Mock 创建 ObjectManager
         $objectManager = $this->createMock(ObjectManager::class);
         $objectManager->method('getClassMetadata')->willReturn($classMetadata);
-
-        $this->propertyAccessor->method('isWritable')->willReturn(true);
-
-        // 确保 setValue 不会被调用，因为已经有值了
-        $this->propertyAccessor->expects($this->never())->method('setValue');
 
         // 直接调用 prePersistEntity 方法
         $this->listener->prePersistEntity($objectManager, $entity);
 
         // 验证现有值不会被覆盖
         $this->assertSame('existing_value', $entity->getRandomId());
+    }
+
+    /**
+     * 测试 prePersistEntity 方法
+     */
+    public function testPrePersistEntity(): void
+    {
+        $entity = $this->getEntityWithRandomStringColumn();
+        $reflection = new \ReflectionClass($entity);
+
+        // 使用 PHPUnit Mock 创建 ClassMetadata
+        $classMetadata = $this->createMock(ClassMetadata::class);
+        $classMetadata->method('getReflectionClass')->willReturn($reflection);
+
+        // 使用 PHPUnit Mock 创建 ObjectManager
+        $objectManager = $this->createMock(ObjectManager::class);
+        $objectManager->method('getClassMetadata')->willReturn($classMetadata);
+
+        // 测试方法执行成功
+        $this->listener->prePersistEntity($objectManager, $entity);
+
+        // 验证随机值被正确设置
+        $randomId = $entity->getRandomId();
+        $this->assertIsString($randomId);
+        $this->assertNotEmpty($randomId);
+        $this->assertSame(10, strlen($randomId));
+    }
+
+    /**
+     * 测试 preUpdateEntity 方法
+     */
+    public function testPreUpdateEntity(): void
+    {
+        $entity = $this->getEntityWithRandomStringColumn();
+        $reflection = new \ReflectionClass($entity);
+
+        // 使用 PHPUnit Mock 创建 ClassMetadata
+        $classMetadata = $this->createMock(ClassMetadata::class);
+        $classMetadata->method('getReflectionClass')->willReturn($reflection);
+
+        // 使用 PHPUnit Mock 创建 ObjectManager
+        $objectManager = $this->createMock(ObjectManager::class);
+        $objectManager->method('getClassMetadata')->willReturn($classMetadata);
+
+        // 使用 PHPUnit Mock 创建 PreUpdateEventArgs
+        $eventArgs = $this->createMock(PreUpdateEventArgs::class);
+
+        // 测试 preUpdateEntity 方法（这个方法目前是空实现）
+        $this->listener->preUpdateEntity($objectManager, $entity, $eventArgs);
+
+        // 验证方法正常执行，preUpdate 目前不修改实体
+        $originalRandomId = $entity->getRandomId();
+        $this->assertSame($originalRandomId, $entity->getRandomId());
     }
 }

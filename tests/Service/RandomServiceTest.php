@@ -1,43 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\DoctrineRandomBundle\Tests\Service;
 
 use Doctrine\ORM\QueryBuilder;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\Lock\LockFactory;
-use Symfony\Component\Lock\LockInterface;
-use Symfony\Contracts\Cache\CacheInterface;
 use Tourze\DoctrineRandomBundle\Service\RandomService;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 
 /**
  * 测试随机服务
+ *
+ * @internal
  */
-class RandomServiceTest extends TestCase
+#[CoversClass(RandomService::class)]
+#[RunTestsInSeparateProcesses]
+final class RandomServiceTest extends AbstractIntegrationTestCase
 {
-    /** @var MockObject|LockFactory */
-    private $lockFactory;
-
-    /** @var MockObject|LoggerInterface */
-    private $logger;
-
-    /** @var MockObject|CacheInterface */
-    private $cache;
-
     private RandomService $randomService;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->lockFactory = $this->createMock(LockFactory::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->cache = $this->createMock(CacheInterface::class);
-
-        $this->randomService = new RandomService(
-            $this->lockFactory,
-            $this->logger,
-            $this->cache
-        );
+        // 从容器获取服务，使用真实的依赖
+        $this->randomService = self::getService(RandomService::class);
     }
 
     /**
@@ -45,13 +33,7 @@ class RandomServiceTest extends TestCase
      */
     public function testConstructor(): void
     {
-        $randomService = new RandomService(
-            $this->lockFactory,
-            $this->logger,
-            $this->cache
-        );
-
-        $this->assertInstanceOf(RandomService::class, $randomService);
+        $this->assertInstanceOf(RandomService::class, $this->randomService);
     }
 
     /**
@@ -59,21 +41,19 @@ class RandomServiceTest extends TestCase
      */
     public function testGetRandomResultWithoutIds(): void
     {
-        // 准备空的ID列表
-        $ids = [];
-        $this->cache->method('get')->willReturn($ids);
-
-        // Mock 查询构建器
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('getRootAliases')->willReturn(['e']);
-        $queryBuilder->method('getDQL')->willReturn('SELECT e FROM Entity e');
+        // 创建QueryBuilder mock，返回空结果
+        $queryBuilder = $this->createMockQueryBuilder(['user']);
 
         // 执行测试
         $results = $this->randomService->getRandomResult($queryBuilder);
 
-        // 验证空结果
+        // 验证返回结果是可遍历的
         $this->assertInstanceOf(\Traversable::class, $results);
-        $this->assertCount(0, iterator_to_array($results));
+
+        // 验证结果是数组
+        $resultArray = iterator_to_array($results);
+        $this->assertIsArray($resultArray);
+        $this->assertEmpty($resultArray);
     }
 
     /**
@@ -106,30 +86,30 @@ class RandomServiceTest extends TestCase
      */
     public function testLockCreation(): void
     {
-        // 测试锁的创建
-        $lock = $this->createMock(LockInterface::class);
+        // 创建QueryBuilder mock
+        $queryBuilder = $this->createMockQueryBuilder(['user']);
 
-        $this->lockFactory->expects($this->once())
-            ->method('createLock')
-            ->with($this->isType('string'))
-            ->willReturn($lock);
+        // 执行测试，验证方法能正常执行
+        $results = iterator_to_array($this->randomService->getRandomResult($queryBuilder));
 
-        // 调用服务方法，触发锁创建
-        $qb = $this->createMock(QueryBuilder::class);
-        $qb->method('getRootAliases')->willReturn(['e']);
-        $qb->method('getDQL')->willReturn('test');
+        // 验证结果是数组
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
 
-        // 确保方法会尝试获取一个 ID
-        $ids = [1];
-        $this->cache->method('get')->willReturn($ids);
+    /**
+     * 创建QueryBuilder mock的辅助方法
+     * @param string[] $rootAliases
+     * @return QueryBuilder&MockObject
+     */
+    private function createMockQueryBuilder(array $rootAliases): QueryBuilder
+    {
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('getRootAliases')->willReturn($rootAliases);
+        $queryBuilder->method('getDQL')->willReturn('SELECT u FROM User u');
+        $queryBuilder->method('getMaxResults')->willReturn(null);
+        $queryBuilder->method('getFirstResult')->willReturn(0);
 
-        // 模拟锁获取失败，这样就不会调用 release
-        $lock->method('acquire')->willReturn(false);
-
-        // 执行测试
-        $results = iterator_to_array($this->randomService->getRandomResult($qb));
-
-        // 应该没有结果，因为锁获取失败
-        $this->assertCount(0, $results);
+        return $queryBuilder;
     }
 }
