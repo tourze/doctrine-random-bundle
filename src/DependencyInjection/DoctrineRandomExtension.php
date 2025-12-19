@@ -6,7 +6,7 @@ namespace Tourze\DoctrineRandomBundle\DependencyInjection;
 
 use Tourze\SymfonyDependencyServiceLoader\AutoExtension;
 
-class DoctrineRandomExtension extends AutoExtension
+final class DoctrineRandomExtension extends AutoExtension
 {
     protected function getConfigDir(): string
     {
